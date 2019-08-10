@@ -1,6 +1,7 @@
 const express = require("express")
 const app = express()
 const bodyParser = require("body-parser")
+const morgan = require("morgan")
 
 let persons = [
 	{
@@ -21,6 +22,11 @@ let persons = [
 ]
 
 app.use(bodyParser.json())
+app.use(morgan(":method :url - :body"))
+
+morgan.token("body", (req, res) => {
+	return JSON.stringify(req.body)
+})
 
 app.get("/info", (req, res) => {
 	res.send(`
