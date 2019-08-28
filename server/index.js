@@ -32,7 +32,7 @@ morgan.token("body", (req, res) => {
 
 app.get("/info", (req, res) => {
 	res.send(`
-		<p>Phonebook has info for ${persons.length} people xxx</p>
+		<p>Phonebook has info for ${persons.length} people</p>
 		<p>${new Date()}</p>
 	`)
 })

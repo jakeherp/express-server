@@ -1,20 +1,15 @@
 {
-	"name": "node",
+	"private": true,
+	"name": "phonebook-app",
 	"version": "1.0.0",
-	"main": "index.js",
-	"license": "MIT",
-	"author": "Jacob Herper",
+	"description": "Fullstack Open 2019 project (part 3)",
 	"scripts": {
-		"start": "node index.js",
-		"watch": "nodemon index.js",
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"dependencies": {
-		"cors": "^2.8.5",
-		"express": "^4.17.1",
-		"morgan": "^1.9.1"
-	},
-	"devDependencies": {
-		"nodemon": "^1.19.1"
+		"install": "(cd ./client && yarn install) && (cd ./server && yarn install)",
+		"client": "(cd ./client && yarn start)",
+		"build": "(cd ./client && yarn build)",
+		"server": "(cd ./server && yarn start)",
+		"pretest": "(cd ./client && yarn lint) && (cd ./server && yarn lint)",
+		"test": "(cd ./client && CI=true yarn test) && (cd ./server && CI=true yarn test)",
+		"start": "echo 'Did you mean `yarn server` or `yarn client`?'"
 	}
 }
