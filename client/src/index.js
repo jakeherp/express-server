@@ -65,6 +65,9 @@ const App = () => {
 				.then(res => {
 					setPersons([...persons, res.data])
 				})
+				.catch(err => {
+					console.log(err.response.data)
+				})
 			resetForm()
 		}
 	}
