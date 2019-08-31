@@ -1,26 +1,11 @@
+require("dotenv").config()
 const express = require("express")
 const app = express()
 const bodyParser = require("body-parser")
 const morgan = require("morgan")
 const cors = require("cors")
 
-let persons = [
-	{
-		name: "Arto Hellas",
-		number: "040-123456",
-		id: 1,
-	},
-	{
-		name: "Ada Lovelace",
-		number: "39-44-5323523",
-		id: 2,
-	},
-	{
-		name: "Dan Abramov",
-		number: "12-43-234345",
-		id: 3,
-	},
-]
+const Person = require("./models/person")
 
 app.use(bodyParser.json())
 app.use(morgan(":method :url - :body"))
@@ -32,43 +17,65 @@ morgan.token("body", (req, res) => {
 })
 
 app.get("/info", (req, res) => {
-	res.send(`
-		<p>Phonebook has info for ${persons.length} people</p>
-		<p>${new Date()}</p>
-	`)
+	Person.find({}).then(persons => {
+		res.send(`
+			<p>Phonebook has info for ${persons.length} people</p>
+			<p>${new Date()}</p>
+		`)
+	})
 })
 
 app.get("/api/persons", (req, res) => {
-	res.json(persons)
+	Person.find({}).then(persons => {
+		res.json(persons.map(person => person.toJSON()))
+	})
 })
 
-app.get("/api/persons/:id", (req, res) => {
-	const id = Number(req.params.id)
-	const person = persons.find(person => person.id === id)
-
-	person ? res.json(person) : res.status(404).end()
+app.get("/api/persons/:id", (req, res, next) => {
+	Person.findById(req.params.id)
+		.then(person => {
+			if (person) {
+				res.json(person.toJSON())
+			} else {
+				res.status(404).end()
+			}
+		})
+		.catch(err => next(err))
 })
 
-app.delete("/api/persons/:id", (req, res) => {
-	const id = Number(req.params.id)
-	persons = persons.filter(person => person.id !== id)
-	res.status(204).end()
+app.put("/api/persons/:id", (req, res, next) => {
+	const body = req.body
+
+	const person = {
+		name: body.name,
+		number: body.number,
+	}
+
+	Person.findByIdAndUpdate(req.params.id, person, { new: true })
+		.then(updatedPerson => {
+			res.json(updatedPerson.toJSON())
+		})
+		.catch(err => next(err))
 })
 
-const generateRandomId = () => {
-	return Math.floor(Math.random() * Math.floor(1000000))
-}
+app.delete("/api/persons/:id", (req, res, next) => {
+	Person.findByIdAndRemove(req.params.id)
+		.then(res => {
+			res.status(204).end()
+		})
+		.catch(err => next(err))
+})
 
 app.post("/api/persons", (req, res) => {
 	const body = req.body
 
 	if (!body.name || !body.number) {
-		return res.status(400).json({
-			error: "content is missing",
-		})
+		return res.status(400).json({ error: "content missing" })
 	}
 
-	const checkDuplicate = persons.filter(person => person.name === body.name)
+	const checkDuplicate = Person.find({ name: body.name }).then(res => {
+		res, mongoose.connection.close()
+	})
 
 	if (checkDuplicate.length > 0) {
 		return res.status(400).json({
@@ -76,16 +83,33 @@ app.post("/api/persons", (req, res) => {
 		})
 	}
 
-	const person = {
+	const person = new Person({
 		name: body.name,
 		number: body.number,
-		id: generateRandomId(),
+	})
+
+	person.save().then(savedPerson => {
+		res.json(savedPerson.toJSON())
+	})
+})
+
+const unknownEndpoint = (req, res) => {
+	res.status(404).send({ error: "unknown endpoint" })
+}
+
+app.use(unknownEndpoint)
+
+const errorHandler = (err, req, res, next) => {
+	console.error(err.message)
+
+	if (err.name === "CastError" && err.kind === "ObjectId") {
+		return res.status(400).send({ error: "malformatted id" })
 	}
 
-	persons = persons.concat(person)
+	next(error)
+}
 
-	res.json(person)
-})
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
